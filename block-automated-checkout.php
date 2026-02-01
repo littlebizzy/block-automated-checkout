@@ -27,22 +27,32 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
-// block checkout if nonce is missing or invalid
+// block checkout if woo checkout nonce is missing or invalid
 add_action( 'woocommerce_checkout_process', function() {
 
+	// ensure the woo checkout nonce field exists in the request
 	if ( empty( $_POST['woocommerce-process-checkout-nonce'] ) ) {
-		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		wc_add_notice(
+			__( 'Invalid checkout request.', 'block-automated-checkout' ),
+			'error'
+		);
 		return;
 	}
 
+	// sanitize the submitted nonce value before validation
 	$nonce = sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) );
 
+	// verify the nonce against woo’s expected checkout action
 	if ( ! wp_verify_nonce( $nonce, 'woocommerce-process-checkout' ) ) {
-		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		wc_add_notice(
+			__( 'Invalid checkout request.', 'block-automated-checkout' ),
+			'error'
+		);
 		return;
 	}
 
 } );
+
 
 // block checkout if no active cart or session
 add_action( 'woocommerce_checkout_process', function() {
