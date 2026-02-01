@@ -42,7 +42,7 @@ add_action( 'woocommerce_checkout_process', function() {
 	// sanitize the submitted nonce value before validation
 	$nonce = sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) );
 
-	// verify the nonce against woo’s expected checkout action
+	// verify the nonce against expected woo checkout action
 	if ( ! wp_verify_nonce( $nonce, 'woocommerce-process-checkout' ) ) {
 		wc_add_notice(
 			__( 'Invalid checkout request.', 'block-automated-checkout' ),
