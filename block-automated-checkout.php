@@ -23,6 +23,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // override wordpress.org with git updater
 add_filter( 'gu_override_dot_org', function( $overrides ) {
-	$overrides[] = 'verified-customers/verified-customers.php';
+	$overrides[] = 'block-automated-checkout/block-automated-checkout.php';
 	return $overrides;
 }, 999 );
+
+
+
+// block checkout if nonce is missing or invalid
+add_action( 'woocommerce_checkout_process', function() {
+
+	if ( empty( $_POST['_wpnonce'] ) ) {
+		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		return;
+	}
+
+	if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'woocommerce-process-checkout' ) ) {
+		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		return;
+	}
+
+} );
+
+// block checkout if no active cart or session
+add_action( 'woocommerce_checkout_process', function() {
+
+	if ( ! function_exists( 'WC' ) ) {
+		return;
+	}
+
+	if ( ! WC()->session || ! WC()->cart ) {
+		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		return;
+	}
+
+	if ( WC()->cart->is_empty() ) {
+		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		return;
+	}
+
+} );
+
+// Ref: ChatGPT
