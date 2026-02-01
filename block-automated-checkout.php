@@ -27,17 +27,17 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
-
-
 // block checkout if nonce is missing or invalid
 add_action( 'woocommerce_checkout_process', function() {
 
-	if ( empty( $_POST['_wpnonce'] ) ) {
+	if ( empty( $_POST['woocommerce-process-checkout-nonce'] ) ) {
 		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
 		return;
 	}
 
-	if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'woocommerce-process-checkout' ) ) {
+	$nonce = sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) );
+
+	if ( ! wp_verify_nonce( $nonce, 'woocommerce-process-checkout' ) ) {
 		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
 		return;
 	}
