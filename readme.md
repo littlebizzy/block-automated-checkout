@@ -1,3 +1,3 @@
 # Block Automated Checkout
 
-Stops automated Woo checkout abuse
+Blocks checkout abuse in Woo
