@@ -1,0 +1,1 @@
+# block-automated-checkout
