@@ -2,7 +2,7 @@
 /*
 Plugin Name: Block Automated Checkout
 Plugin URI: https://www.littlebizzy.com/plugins/block-automated-checkout
-Description: Blocks checkout abuse in Woo
+Description: Stops checkout abuse in Woo
 Version: 1.0.0
 Requires PHP: 7.0
 Tested up to: 6.9
@@ -53,21 +53,29 @@ add_action( 'woocommerce_checkout_process', function() {
 
 } );
 
-
-// block checkout if no active cart or session
+// block checkout if no valid woo session or cart exists
 add_action( 'woocommerce_checkout_process', function() {
 
+	// ensure woocommerce is loaded
 	if ( ! function_exists( 'WC' ) ) {
 		return;
 	}
 
+	// ensure a session and cart object are available
 	if ( ! WC()->session || ! WC()->cart ) {
-		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		wc_add_notice(
+			__( 'Invalid checkout request.', 'block-automated-checkout' ),
+			'error'
+		);
 		return;
 	}
 
+	// ensure the cart is not empty
 	if ( WC()->cart->is_empty() ) {
-		wc_add_notice( __( 'Invalid checkout request.', 'block-automated-checkout' ), 'error' );
+		wc_add_notice(
+			__( 'Invalid checkout request.', 'block-automated-checkout' ),
+			'error'
+		);
 		return;
 	}
 
