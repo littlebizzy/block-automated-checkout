@@ -4,6 +4,12 @@ Stops checkout abuse in Woo
 
 ## Changelog
 
+## 1.1.0
+- removed strict WooCommerce checkout nonce enforcement
+- relies on WooCommerce core nonce validation
+- retains session and cart validation safeguards
+- improves compatibility with cached or stale checkout sessions
+
 ### 1.0.0
 - initial release
 - supports PHP 7.0 to 8.3
