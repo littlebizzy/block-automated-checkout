@@ -3,7 +3,7 @@
 Plugin Name: Block Automated Checkout
 Plugin URI: https://www.littlebizzy.com/plugins/block-automated-checkout
 Description: Stops checkout abuse in Woo
-Version: 1.1.0
+Version: 1.2.0
 Requires PHP: 7.0
 Tested up to: 6.9
 Author: LittleBizzy
@@ -27,7 +27,7 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
-// block checkout if no valid woo session or cart exists
+// validate checkout request and block common automation patterns
 add_action( 'woocommerce_checkout_process', function() {
 
 	// ensure woocommerce is loaded
@@ -51,6 +51,33 @@ add_action( 'woocommerce_checkout_process', function() {
 			'error'
 		);
 		return;
+	}
+
+	// block newly created accounts from ordering immediately
+	if ( is_user_logged_in() ) {
+
+		// get current user object
+		$user = wp_get_current_user();
+
+		if ( $user && ! empty( $user->user_registered ) ) {
+
+			// minimum account age in seconds
+			$min_age = (int) apply_filters( 'block_automated_checkout_min_account_age', 300 );
+
+			// calculate account age using site timezone
+			$registered_timestamp = strtotime( $user->user_registered );
+			$current_timestamp = current_time( 'timestamp' );
+			$account_age = $current_timestamp - $registered_timestamp;
+
+			// block checkout if account is too new
+			if ( $account_age < $min_age ) {
+				wc_add_notice(
+					__( 'Please wait a few minutes before placing your first order.', 'block-automated-checkout' ),
+					'error'
+				);
+				return;
+			}
+		}
 	}
 
 } );
