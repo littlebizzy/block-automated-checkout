@@ -4,7 +4,12 @@ Stops checkout abuse in Woo
 
 ## Changelog
 
-## 1.1.0
+### 1.2.0
+- added minimum account age requirement before checkout (default 300 seconds)
+- blocks immediate first-order attempts from newly registered accounts
+- improves protection against register-and-test card validation abuse
+
+### 1.1.0
 - removed strict WooCommerce checkout nonce enforcement
 - relies on WooCommerce core nonce validation
 - retains session and cart validation safeguards
