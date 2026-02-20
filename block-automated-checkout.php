@@ -3,7 +3,7 @@
 Plugin Name: Block Automated Checkout
 Plugin URI: https://www.littlebizzy.com/plugins/block-automated-checkout
 Description: Stops checkout abuse in Woo
-Version: 1.2.0
+Version: 1.3.0
 Requires PHP: 7.0
 Tested up to: 6.9
 Author: LittleBizzy
@@ -27,7 +27,7 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
-// validate checkout request and block common automation patterns
+// validate checkout request and block automation patterns
 add_action( 'woocommerce_checkout_process', function() {
 
 	// ensure woocommerce is loaded
@@ -53,29 +53,73 @@ add_action( 'woocommerce_checkout_process', function() {
 		return;
 	}
 
-	// block newly created accounts from ordering immediately
+	// apply restrictions only to logged in users
 	if ( is_user_logged_in() ) {
 
 		// get current user object
 		$user = wp_get_current_user();
 
-		if ( $user && ! empty( $user->user_registered ) ) {
+		if ( $user ) {
 
 			// minimum account age in seconds
 			$min_age = (int) apply_filters( 'block_automated_checkout_min_account_age', 300 );
 
-			// calculate account age using site timezone
-			$registered_timestamp = strtotime( $user->user_registered );
-			$current_timestamp = current_time( 'timestamp' );
-			$account_age = $current_timestamp - $registered_timestamp;
+			// parse registration timestamp as utc
+			$registered_timestamp = strtotime( $user->user_registered . ' UTC' );
 
-			// block checkout if account is too new
-			if ( $account_age < $min_age ) {
-				wc_add_notice(
-					__( 'Please wait a few minutes before placing your first order.', 'block-automated-checkout' ),
-					'error'
-				);
-				return;
+			// continue only if registration timestamp is valid
+			if ( false !== $registered_timestamp ) {
+
+				// calculate account age using site timezone
+				$current_timestamp = current_time( 'timestamp' );
+				$account_age = $current_timestamp - $registered_timestamp;
+
+				// block checkout if account is too new
+				if ( $account_age < $min_age ) {
+					wc_add_notice(
+						__( 'Please wait a few minutes before placing an order.', 'block-automated-checkout' ),
+						'error'
+					);
+					return;
+				}
+			}
+
+			// enforce minimum time between orders
+			$min_interval = (int) apply_filters( 'block_automated_checkout_min_order_interval', 1800 );
+
+			// get most recent order id for this customer
+			$orders = wc_get_orders( array(
+				'customer_id' => $user->ID,
+				'limit' => 1,
+				'orderby' => 'date',
+				'order' => 'DESC',
+				'return' => 'ids',
+			) );
+
+			if ( ! empty( $orders ) ) {
+
+				$last_order_id = $orders[0];
+				$last_order = wc_get_order( $last_order_id );
+
+				if ( $last_order ) {
+
+					$last_order_time = $last_order->get_date_created();
+
+					if ( $last_order_time ) {
+
+						$last_timestamp = $last_order_time->getTimestamp();
+						$current_timestamp = current_time( 'timestamp' );
+
+						// block checkout if last order was too recent
+						if ( ( $current_timestamp - $last_timestamp ) < $min_interval ) {
+							wc_add_notice(
+								__( 'Please wait before placing another order.', 'block-automated-checkout' ),
+								'error'
+							);
+							return;
+						}
+					}
+				}
 			}
 		}
 	}
