@@ -63,8 +63,8 @@ add_action( 'woocommerce_checkout_process', function() {
 		// continue only if registration timestamp is valid
 		if ( false !== $registered_timestamp ) {
 
-			// calculate account age using site timezone
-			$current_timestamp = current_time( 'timestamp' );
+			// calculate account age in utc
+			$current_timestamp = time();
 			$account_age = $current_timestamp - $registered_timestamp;
 
 			// block checkout if account is too new
