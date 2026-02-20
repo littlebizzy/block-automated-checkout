@@ -54,68 +54,65 @@ add_action( 'woocommerce_checkout_process', function() {
 		// get current user object
 		$user = wp_get_current_user();
 
-		if ( $user ) {
+		// minimum account age in seconds
+		$min_age = (int) apply_filters( 'block_automated_checkout_min_account_age', 300 );
 
-			// minimum account age in seconds
-			$min_age = (int) apply_filters( 'block_automated_checkout_min_account_age', 300 );
+		// parse registration timestamp as utc
+		$registered_timestamp = strtotime( $user->user_registered . ' UTC' );
 
-			// parse registration timestamp as utc
-			$registered_timestamp = strtotime( $user->user_registered . ' UTC' );
+		// continue only if registration timestamp is valid
+		if ( false !== $registered_timestamp ) {
 
-			// continue only if registration timestamp is valid
-			if ( false !== $registered_timestamp ) {
+			// calculate account age using site timezone
+			$current_timestamp = current_time( 'timestamp' );
+			$account_age = $current_timestamp - $registered_timestamp;
 
-				// calculate account age using site timezone
-				$current_timestamp = current_time( 'timestamp' );
-				$account_age = $current_timestamp - $registered_timestamp;
-
-				// block checkout if account is too new
-				if ( $account_age < $min_age ) {
-					wc_add_notice(
-						__( 'Please wait a few minutes before placing an order.', 'block-automated-checkout' ),
-						'error'
-					);
-					return;
-				}
+			// block checkout if account is too new
+			if ( $account_age < $min_age ) {
+				wc_add_notice(
+					__( 'Please wait a few minutes before placing an order.', 'block-automated-checkout' ),
+					'error'
+				);
+				return;
 			}
+		}
 
-			// enforce minimum time between orders
-			$min_interval = (int) apply_filters( 'block_automated_checkout_min_order_interval', 1800 );
+		// enforce minimum time between orders
+		$min_interval = (int) apply_filters( 'block_automated_checkout_min_order_interval', 1800 );
 
-			// get most recent order id for this customer
-			$orders = wc_get_orders( array(
-				'customer_id' => $user->ID,
-				'limit' => 1,
-				'orderby' => 'date',
-				'order' => 'DESC',
-				'return' => 'ids',
-			) );
+		// get most recent order id for this customer
+		$orders = wc_get_orders( array(
+			'customer_id' => $user->ID,
+			'limit' => 1,
+			'orderby' => 'date',
+			'order' => 'DESC',
+			'return' => 'ids',
+		) );
 
-			if ( ! empty( $orders ) ) {
+		if ( ! empty( $orders ) ) {
 
-				// first result is most recent order id
-				$last_order_id = $orders[0];
-				$last_order = wc_get_order( $last_order_id );
+			// first result is most recent order id
+			$last_order_id = $orders[0];
+			$last_order = wc_get_order( $last_order_id );
 
-				if ( $last_order ) {
+			if ( $last_order ) {
 
-					// get order creation datetime object
-					$last_order_time = $last_order->get_date_created();
+				// get order creation datetime object
+				$last_order_time = $last_order->get_date_created();
 
-					if ( null !== $last_order_time ) {
+				if ( null !== $last_order_time ) {
 
-						// compare unix timestamps in utc
-						$last_timestamp = $last_order_time->getTimestamp();
-						$current_timestamp = time();
+					// compare unix timestamps in utc
+					$last_timestamp = $last_order_time->getTimestamp();
+					$current_timestamp = time();
 
-						// block checkout if last order was too recent
-						if ( ( $current_timestamp - $last_timestamp ) < $min_interval ) {
-							wc_add_notice(
-								__( 'Please wait a while before placing another order.', 'block-automated-checkout' ),
-								'error'
-							);
-							return;
-						}
+					// block checkout if last order was too recent
+					if ( ( $current_timestamp - $last_timestamp ) < $min_interval ) {
+						wc_add_notice(
+							__( 'Please wait a while before placing another order.', 'block-automated-checkout' ),
+							'error'
+						);
+						return;
 					}
 				}
 			}
