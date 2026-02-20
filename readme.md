@@ -4,6 +4,13 @@ Stops checkout abuse in Woo
 
 ## Changelog
 
+### 1.3.0
+- added minimum time between orders requirement (default 1800 seconds)
+- blocks rapid repeat checkout attempts from the same logged-in account
+- keeps order interval setting filterable via `block_automated_checkout_min_order_interval`
+- improved timestamp handling for checkout timing validation
+- keeps minimum account age protection in place before checkout
+
 ### 1.2.0
 - added minimum account age requirement before checkout (default 300 seconds)
 - blocks immediate first-order attempts from newly registered accounts
