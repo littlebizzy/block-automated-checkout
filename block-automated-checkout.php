@@ -30,13 +30,8 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 // validate checkout request and block automation patterns
 add_action( 'woocommerce_checkout_process', function() {
 
-	// ensure woocommerce is loaded
-	if ( ! function_exists( 'WC' ) ) {
-		return;
-	}
-
-	// ensure a session and cart object are available
-	if ( ! WC()->session || ! WC()->cart ) {
+	// ensure a valid woo session and cart exist
+	if ( empty( WC()->session ) || empty( WC()->cart ) ) {
 		wc_add_notice(
 			__( 'Invalid checkout request.', 'block-automated-checkout' ),
 			'error'
@@ -44,7 +39,7 @@ add_action( 'woocommerce_checkout_process', function() {
 		return;
 	}
 
-	// ensure the cart is not empty
+	// ensure woo cart contains items
 	if ( WC()->cart->is_empty() ) {
 		wc_add_notice(
 			__( 'Invalid checkout request.', 'block-automated-checkout' ),
@@ -98,22 +93,25 @@ add_action( 'woocommerce_checkout_process', function() {
 
 			if ( ! empty( $orders ) ) {
 
+				// first result is most recent order id
 				$last_order_id = $orders[0];
 				$last_order = wc_get_order( $last_order_id );
 
 				if ( $last_order ) {
 
+					// get order creation datetime object
 					$last_order_time = $last_order->get_date_created();
 
-					if ( $last_order_time ) {
+					if ( null !== $last_order_time ) {
 
+						// compare unix timestamps in utc
 						$last_timestamp = $last_order_time->getTimestamp();
-						$current_timestamp = current_time( 'timestamp' );
+						$current_timestamp = time();
 
 						// block checkout if last order was too recent
 						if ( ( $current_timestamp - $last_timestamp ) < $min_interval ) {
 							wc_add_notice(
-								__( 'Please wait before placing another order.', 'block-automated-checkout' ),
+								__( 'Please wait a while before placing another order.', 'block-automated-checkout' ),
 								'error'
 							);
 							return;
