@@ -3,7 +3,7 @@
 Plugin Name: Block Automated Checkout
 Plugin URI: https://www.littlebizzy.com/plugins/block-automated-checkout
 Description: Stops checkout abuse in Woo
-Version: 1.3.0
+Version: 1.4.0
 Requires PHP: 7.0
 Tested up to: 6.9
 Author: LittleBizzy
@@ -71,6 +71,55 @@ add_action( 'woocommerce_checkout_process', function() {
 			if ( $account_age < $min_age ) {
 				wc_add_notice(
 					__( 'Please wait a few minutes before placing an order.', 'block-automated-checkout' ),
+					'error'
+				);
+				return;
+			}
+		}
+
+		// get up to 3 recent failed orders for this customer
+		$failed_orders = wc_get_orders( array(
+			'customer_id' => $user->ID,
+			'status' => array( 'wc-failed' ),
+			'limit' => 3,
+			'orderby' => 'date',
+			'order' => 'DESC',
+			'return' => 'ids',
+		) );
+
+		if ( ! empty( $failed_orders ) ) {
+
+			// count failed orders within the last 24 hours
+			$failed_order_count = 0;
+			$current_timestamp = time();
+
+			foreach ( $failed_orders as $failed_order_id ) {
+
+				// load failed order object
+				$failed_order = wc_get_order( $failed_order_id );
+
+				if ( $failed_order ) {
+
+					// get failed order creation datetime object
+					$failed_order_time = $failed_order->get_date_created();
+
+					if ( null !== $failed_order_time ) {
+
+						// compare failed order timestamp in utc
+						$failed_timestamp = $failed_order_time->getTimestamp();
+
+						// count only failed orders from the last 24 hours
+						if ( ( $current_timestamp - $failed_timestamp ) < 86400 ) {
+							$failed_order_count++;
+						}
+					}
+				}
+			}
+
+			// block checkout after 3 failed orders in 24 hours
+			if ( $failed_order_count >= 3 ) {
+				wc_add_notice(
+					__( 'Please wait 24 hours before placing another order.', 'block-automated-checkout' ),
 					'error'
 				);
 				return;
