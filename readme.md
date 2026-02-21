@@ -4,6 +4,11 @@ Stops checkout abuse in Woo
 
 ## Changelog
 
+### 1.4.0
+- added failed-order rate limiting for logged-in customers
+- blocks checkout for 24 hours after 3 failed orders within a 24-hour period
+- retains existing account-age and order-interval protections
+
 ### 1.3.0
 - added minimum time between orders requirement (default 1800 seconds)
 - blocks rapid repeat checkout attempts from the same logged-in account
